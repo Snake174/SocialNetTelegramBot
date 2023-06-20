@@ -1,0 +1,50 @@
+stages:
+  - build
+  - package
+  - deploy
+
+build:
+  stage: build
+  only:
+    - master
+  tags:
+    - socialnet_runner
+  script:
+    - mvn clean
+    - mvn compile -Dmaven.repo.local=./.m2/repository
+  cache:
+    paths:
+      - ./target
+      - ./.m2
+
+package:
+  stage: package
+  only:
+    - master
+  tags:
+    - socialnet_runner
+  script:
+    - mvn package -am -Dmaven.test.skip -T 1C -Dmaven.repo.local=./.m2/repository
+  artifacts:
+    paths:
+      - target/snbot-0.0.1-SNAPSHOT.jar
+  cache:
+    policy: pull
+    paths:
+      - ./target
+      - ./.m2
+
+deploy:
+  stage: deploy
+  only:
+    - master
+  tags:
+    - socialnet_runner
+  script:
+    - docker-compose down
+    - (docker ps -a -q --filter="name=snbot" | xargs docker stop | xargs docker rm) || echo "No containers to remove"
+    - (docker images -a -q --filter="reference=snbot" | xargs docker rmi) || echo "No images to remove"
+    - (docker ps -a -q --filter="name=redis-cache" | xargs docker stop | xargs docker rm) || echo "No containers to remove"
+    - (docker images -a -q --filter="reference=redis-cache" | xargs docker rmi) || echo "No images to remove"
+    - (docker images -a -q --filter="dangling=true" | xargs docker rmi) || echo "No images to remove"
+    - docker-compose up --build -d

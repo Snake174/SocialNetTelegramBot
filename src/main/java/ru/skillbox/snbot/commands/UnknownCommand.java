@@ -1,0 +1,16 @@
+package ru.skillbox.snbot.commands;
+
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import ru.skillbox.snbot.answers.Messages;
+
+public class UnknownCommand implements ICommand {
+    @Override
+    public SendMessage getMessage(Update update) {
+        if (update.hasCallbackQuery()) {
+            return Messages.unknownCommand(update.getCallbackQuery().getMessage());
+        }
+
+        return Messages.unknownCommand(update.getMessage());
+    }
+}
